@@ -1,0 +1,6 @@
+{
+    "mongoURI": "mongodb+srv://root:qwerty12@cluster0.hifmu.mongodb.net/DevCon?retryWrites=true&w=majority",
+    "jwtSecret": "mysecrettoken",
+    "githubClientId": "ef6b46f432e10cc41955",
+    "githubSecret": "1a8fd8d1c217244e99de821dd66c9ed236caf20c"
+}
