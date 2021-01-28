@@ -7,18 +7,21 @@ const { check, validationResult } = require("express-validator");
 
 const Profile = require("../../models/Profile");
 const User = require("../../models/User");
+const Posts = require("../../models/Post");
 const { mapReduce } = require("../../models/Profile");
+const Post = require("../../models/Post");
 
 // @route   GET api/profile/me
 // @desc    Get current user profile
 // @access  Private
 router.get("/me", auth, async (req, res) => {
   try {
-    // Find user profile
+    // Find user profile in db
     const profile = await Profile.findOne({
       user: req.user.id,
     }).populate("user", ["name", "avatar"]);
 
+    // Check does profile exist
     if (!profile) {
       return res.status(400).json({ msg: "There is no profile for this user" });
     }
@@ -86,6 +89,7 @@ router.post(
     if (linkedin) profileFields.social.linkedin = linkedin;
 
     try {
+      // Find profile in db
       let profile = await Profile.findOne({ user: req.user.id });
 
       if (profile) {
@@ -116,7 +120,9 @@ router.post(
 // @access  Public
 router.get("/", async (req, res) => {
   try {
+    // Find profiles in db
     const profiles = await Profile.find().populate("user", ["name", "avatar"]);
+
     res.json(profiles);
   } catch (err) {
     console.error(err.message);
@@ -129,10 +135,12 @@ router.get("/", async (req, res) => {
 // @access  Public
 router.get("/user/:user_id", async (req, res) => {
   try {
+    // Find user profile in db
     const profile = await Profile.findOne({
       user: req.params.user_id,
     }).populate("user", ["name", "avatar"]);
 
+    // Check does profile exist
     if (!profile)
       return res.status(400).json({ msg: "There is no profile for this user" });
 
@@ -152,10 +160,12 @@ router.get("/user/:user_id", async (req, res) => {
 // @access  Private
 router.delete("/", auth, async (req, res) => {
   try {
-    // @todo - remove users posts
+    // Remove users posts
+    await Post.deleteMany({ user: req.user.id });
 
     // Remove profile
     await Profile.findOneAndRemove({ user: req.user.id });
+
     // Remove user
     await User.findOneAndRemove({ _id: req.user.id });
     res.json({ msg: "User deleted" });
@@ -179,6 +189,7 @@ router.put(
     ],
   ],
   async (req, res) => {
+    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -193,6 +204,7 @@ router.put(
       description,
     } = req.body;
 
+    // Format data of experience
     const newExp = {
       title,
       company,
@@ -204,8 +216,9 @@ router.put(
     };
 
     try {
+      // Find profile in db
       const profile = await Profile.findOne({ user: req.user.id });
-
+      // Add experience to profile
       profile.experience.unshift(newExp);
 
       await profile.save();
@@ -223,6 +236,7 @@ router.put(
 // @access  Private
 router.delete("/experience/:exp_id", auth, async (req, res) => {
   try {
+    // Find profile in db
     const profile = await Profile.findOne({ user: req.user.id });
 
     // Get remove index
@@ -230,6 +244,7 @@ router.delete("/experience/:exp_id", auth, async (req, res) => {
       .map((item) => item.id)
       .indexOf(req.params.exp_id);
 
+    // Delete experience in profile
     profile.experience.splice(removeIndex, 1);
 
     await profile.save();
@@ -256,6 +271,7 @@ router.put(
     ],
   ],
   async (req, res) => {
+    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -270,6 +286,7 @@ router.put(
       description,
     } = req.body;
 
+    // Format data of education
     const newEdu = {
       school,
       degree,
@@ -281,8 +298,10 @@ router.put(
     };
 
     try {
+      // Find profile in db
       const profile = await Profile.findOne({ user: req.user.id });
 
+      // Add education to profile
       profile.education.unshift(newEdu);
 
       await profile.save();
@@ -300,6 +319,7 @@ router.put(
 // @access  Private
 router.delete("/education/:edu_id", auth, async (req, res) => {
   try {
+    //Find profile in db
     const profile = await Profile.findOne({ user: req.user.id });
 
     // Get remove index
@@ -307,6 +327,7 @@ router.delete("/education/:edu_id", auth, async (req, res) => {
       .map((item) => item.id)
       .indexOf(req.params.edu_id);
 
+    // Delete education in profile
     profile.education.splice(removeIndex, 1);
 
     await profile.save();
@@ -323,6 +344,7 @@ router.delete("/education/:edu_id", auth, async (req, res) => {
 // @access  Public
 router.get("/github/:username", async (req, res) => {
   try {
+    // Write options for request to GitHub oAuth
     const options = {
       uri: `https://api.github.com/users/${
         req.params.username
@@ -333,9 +355,12 @@ router.get("/github/:username", async (req, res) => {
       headers: { "user-agent": "node-js" },
     };
 
+    // Send request to GitHub oAuth
     request(options, (error, response, body) => {
+      // Check errors
       if (error) console.error(error);
 
+      // Check GitHub profile
       if (response.statusCode !== 200) {
         return res.status(404).json({ msg: "No Github profile found" });
       }

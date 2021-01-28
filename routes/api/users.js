@@ -32,9 +32,9 @@ router.post(
     const { name, email, password } = req.body;
 
     try {
-      // Check this user in db
+      // Find user in db
       let user = await User.findOne({ email });
-
+      // Check does user exist
       if (user) {
         return res
           .status(400)
@@ -48,6 +48,7 @@ router.post(
         d: "mm",
       });
 
+      // Format data of user
       user = new User({
         name,
         email,
@@ -70,6 +71,7 @@ router.post(
         },
       };
 
+      // Send jsonwebtoken
       jwt.sign(
         payload,
         config.get("jwtSecret"),

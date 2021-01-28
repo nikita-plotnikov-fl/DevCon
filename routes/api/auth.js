@@ -15,7 +15,9 @@ const User = require("../../models/User");
 // @access  Private
 router.get("/", auth, async (req, res) => {
   try {
+    // Find user in db
     const user = await User.findById(req.user.id).select("-password");
+
     res.json(user);
   } catch (err) {
     console.error(err.message);
@@ -42,9 +44,9 @@ router.post(
     const { email, password } = req.body;
 
     try {
-      // Check this user in db
+      // Find user in db
       let user = await User.findOne({ email });
-
+      // Check does user exist
       if (!user) {
         return res
           .status(400)
@@ -67,6 +69,7 @@ router.post(
         },
       };
 
+      // Send jsonwebtoken
       jwt.sign(
         payload,
         config.get("jwtSecret"),
